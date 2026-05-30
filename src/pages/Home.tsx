@@ -1,6 +1,9 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Briefcase, ChevronRight, Star, ChefHat, Utensils, Coffee, Bell } from 'lucide-react';
+import { Search, MapPin, Briefcase, ChevronRight, Star, ChefHat, Utensils, Coffee, Bell, Share2, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import FAQ from '../components/FAQ';
+import { useToast } from '../context/ToastContext';
 
 export default function Home() {
   return (
@@ -166,9 +169,9 @@ export default function Home() {
                 <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-white text-sm font-medium mb-6">Pour les Candidats</span>
                 <h3 className="text-3xl font-bold text-white mb-4">Créez votre profil en quelques clics</h3>
                 <p className="text-dark-300 mb-8 max-w-sm">Démarquez-vous grâce à notre IA qui optimise votre CV et génère votre lettre de motivation.</p>
-                <button className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-md font-semibold transition-colors w-fit">
+                <Link to="/create-profile" className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-md font-semibold transition-colors w-fit">
                   S'inscrire gratuitement
-                </button>
+                </Link>
               </div>
             </div>
             
@@ -186,11 +189,37 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <FAQ />
     </div>
   );
 }
 
-function JobCard({ index }: { index: number }) {
+const JobCard: React.FC<{ index: number }> = ({ index }) => {
+  const { addToast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(window.location.origin + '/jobs/' + index);
+    setCopied(true);
+    addToast('Lien de l\'offre copié', 'info');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (saved) {
+      setSaved(false);
+      addToast('Offre retirée de vos favoris', 'info');
+    } else {
+      setSaved(true);
+      addToast('Offre sauvegardée avec succès !', 'success');
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -209,9 +238,22 @@ function JobCard({ index }: { index: number }) {
             <span className="text-dark-500 dark:text-dark-400 text-sm">Le Petit Bistrot</span>
           </div>
         </div>
-        <button className="p-2 text-dark-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-full transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-        </button>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={handleShare}
+            title="Copier le lien"
+            className="p-2 text-dark-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-full transition-colors flex items-center justify-center"
+          >
+            {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
+          </button>
+          <button 
+            onClick={handleSave}
+            title="Sauvegarder" 
+            className={`p-2 rounded-full transition-colors flex items-center justify-center ${saved ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'text-dark-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20'}`}
+          >
+            <svg className={`w-5 h-5 ${saved ? 'fill-current' : 'fill-none'}`} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">

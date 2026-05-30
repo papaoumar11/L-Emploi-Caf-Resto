@@ -1,6 +1,13 @@
-import { Users, Briefcase, Eye, TrendingUp, Plus, MapPin, MoreVertical, Edit, Search } from 'lucide-react';
+import { Users, Briefcase, Eye, TrendingUp, Plus, MapPin, MoreVertical, Edit, Search, Star, ChevronRight, Check } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export default function RecruiterDashboard() {
+  const { addToast } = useToast();
+
+  const handleConfig = () => addToast('Configuration sauvegardée', 'success');
+  const handlePublish = () => addToast('Offre d\'emploi publiée avec succès', 'success');
+  const handleEdit = () => addToast('Modification de l\'offre en cours', 'info');
+
   return (
     <div className="min-h-screen bg-dark-50 dark:bg-dark-900 pt-28 pb-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -9,9 +16,17 @@ export default function RecruiterDashboard() {
             <h1 className="text-3xl font-bold text-dark-900 dark:text-white mb-2">Espace Recruteur</h1>
             <p className="text-dark-600 dark:text-dark-300">Gérez vos offres et vos candidatures pour Le Grand Hôtel.</p>
           </div>
-          <button className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-md font-semibold shadow-sm transition-all flex items-center gap-2 self-start md:self-auto">
-            <Plus className="w-5 h-5" /> Publier une offre
-          </button>
+          <div className="flex items-center gap-3 self-start md:self-auto">
+            <button onClick={handleConfig} className="p-3 text-dark-600 dark:text-dark-300 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 rounded-md transition-colors" title="Configurer l'espace">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+            <button onClick={handlePublish} className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-md font-semibold shadow-sm transition-all flex items-center gap-2">
+              <Plus className="w-5 h-5" /> Publier une offre
+            </button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -83,15 +98,39 @@ export default function RecruiterDashboard() {
                          </div>
                          <div className="flex items-center gap-3">
                            {job.isSponsor && (
-                             <span className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs font-medium rounded-full border border-primary-200 dark:border-primary-800">Sponsorisée</span>
+                             <span className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs font-semibold rounded-md border border-primary-200 dark:border-primary-800">Sponsorisée</span>
                            )}
-                           <button className="flex items-center gap-1.5 text-sm font-medium text-dark-600 dark:text-dark-300 hover:text-primary-500">
+                           <button onClick={handleEdit} className="flex items-center gap-1.5 text-sm font-semibold text-dark-600 dark:text-dark-300 hover:text-primary-500">
                              <Edit className="w-4 h-4" /> Modifier
                            </button>
                          </div>
                       </div>
                    </div>
                  ))}
+               </div>
+            </div>
+
+            {/* Candidates Needs Review */}
+            <div className="bg-white dark:bg-dark-800 rounded-xl border border-dark-100 dark:border-dark-700 overflow-hidden shadow-sm">
+               <div className="p-6 border-b border-dark-100 dark:border-dark-700 flex justify-between items-center bg-amber-50/50 dark:bg-amber-900/10">
+                 <h2 className="font-bold text-lg text-dark-900 dark:text-white flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-500 fill-current" /> Évaluer vos derniers entretiens
+                 </h2>
+               </div>
+               <div className="p-6">
+                 <div className="flex items-center justify-between p-4 border border-dark-100 dark:border-dark-700 rounded-xl hover:border-primary-500 transition-colors">
+                   <div className="flex items-center gap-4">
+                     <div className="w-10 h-10 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-bold">Y</div>
+                     <div>
+                       <h4 className="font-bold text-dark-900 dark:text-white cursor-pointer hover:underline" onClick={() => window.location.href = '/candidate-profile'}>Youssef Amrani</h4>
+                       <div className="text-xs text-dark-500">Entretien pour Chef de Partie (Hier)</div>
+                     </div>
+                   </div>
+                   <button className="px-4 py-2 bg-primary-500 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-primary-600 transition-colors"
+                     onClick={() => window.location.href = '/candidate-profile'}>
+                     Noter
+                   </button>
+                 </div>
                </div>
             </div>
           </div>

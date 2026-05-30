@@ -71,13 +71,13 @@ export default function Navbar() {
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <Link
-              to="/login"
-              className="text-sm font-medium text-white hover:text-primary-500 transition-colors"
+              to="/candidates"
+              className="text-sm font-semibold border border-white/20 hover:bg-white/10 text-white px-5 py-2 rounded-md transition-all"
             >
               Connexion
             </Link>
             <Link
-              to="/register"
+              to="/companies"
               className="text-sm font-semibold bg-primary-500 text-white px-5 py-2 rounded-md hover:bg-primary-600 transition-all"
             >
               Publier une offre
@@ -126,14 +126,14 @@ export default function Navbar() {
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <Link
-                  to="/login"
-                  className="w-full py-3 text-center rounded-full border border-dark-200 dark:border-dark-700 text-sm font-medium"
+                  to="/candidates"
+                  className="w-full py-3 text-center rounded-xl border border-dark-200 dark:border-dark-700 text-sm font-medium dark:text-white"
                 >
                   Connexion
                 </Link>
                 <Link
-                  to="/post-job"
-                  className="w-full py-3 text-center rounded-full bg-primary-500 text-white text-sm font-medium shadow-lg shadow-primary-500/20"
+                  to="/companies"
+                  className="w-full py-3 text-center rounded-xl bg-primary-500 text-white text-sm font-medium shadow-lg shadow-primary-500/20"
                 >
                   Publier
                 </Link>

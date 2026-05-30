@@ -5,6 +5,10 @@ import Home from './pages/Home';
 import Jobs from './pages/Jobs';
 import CandidateDashboard from './pages/CandidateDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import CompanyProfile from './pages/CompanyProfile';
+import CandidateProfile from './pages/CandidateProfile';
+import CreateProfile from './pages/CreateProfile';
+import { ToastProvider } from './context/ToastContext';
 
 function AppContent() {
   return (
@@ -16,6 +20,9 @@ function AppContent() {
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/candidates" element={<CandidateDashboard />} />
           <Route path="/companies" element={<RecruiterDashboard />} />
+          <Route path="/company-profile" element={<CompanyProfile />} />
+          <Route path="/candidate-profile" element={<CandidateProfile />} />
+          <Route path="/create-profile" element={<CreateProfile />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
@@ -27,7 +34,9 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </BrowserRouter>
   );
 }
