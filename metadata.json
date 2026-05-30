@@ -1,0 +1,6 @@
+{
+  "name": "L'Emploi Café & Resto",
+  "description": "L'emploi café & resto à portée de main",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
