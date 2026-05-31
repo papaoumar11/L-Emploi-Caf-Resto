@@ -1,8 +1,23 @@
-import React, { useState } from 'react';
-import { MapPin, Search, Filter, Briefcase, Clock, DollarSign, Share2, Check, Bell, ChevronDown, ChevronUp, Store, LayoutGrid, List } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { MapPin, Search, Filter, Briefcase, Clock, DollarSign, Share2, Check, Bell, ChevronDown, ChevronUp, Store, LayoutGrid, List, Map as MapIcon } from 'lucide-react';
 import AlertModal from '../components/AlertModal';
 import AdBanner from '../components/AdBanner';
 import { useToast } from '../context/ToastContext';
+import JobsMap from '../components/JobsMap';
+
+import { motion, animate, useMotionValue, useTransform } from 'framer-motion';
+
+function AnimatedCounter({ value }: { value: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
+
+  useEffect(() => {
+    const controls = animate(count, value, { duration: 0.5 });
+    return controls.stop;
+  }, [value, count]);
+
+  return <motion.strong>{rounded}</motion.strong>;
+}
 
 export default function Jobs() {
   const { addToast } = useToast();
@@ -10,7 +25,117 @@ export default function Jobs() {
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'map'>('list');
+  const [hoveredJobId, setHoveredJobId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState('Les plus récentes');
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [searchCity, setSearchCity] = useState('');
+
+  const [selectedContracts, setSelectedContracts] = useState<string[]>(() => {
+    const saved = localStorage.getItem('jobs_filters_contracts');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [selectedExperiences, setSelectedExperiences] = useState<string[]>(() => {
+    const saved = localStorage.getItem('jobs_filters_experiences');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [selectedSalaries, setSelectedSalaries] = useState<string[]>(() => {
+    const saved = localStorage.getItem('jobs_filters_salaries');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('jobs_filters_contracts', JSON.stringify(selectedContracts));
+  }, [selectedContracts]);
+
+  useEffect(() => {
+    localStorage.setItem('jobs_filters_experiences', JSON.stringify(selectedExperiences));
+  }, [selectedExperiences]);
+
+  useEffect(() => {
+    localStorage.setItem('jobs_filters_salaries', JSON.stringify(selectedSalaries));
+  }, [selectedSalaries]);
+
+  const toggleFilter = (setState: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
+    setState(prev => 
+      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+    );
+  };
+
+  // Fallback coords for some common Moroccan cities if geolocation is disabled
+  const cityCoordinates: Record<string, { lat: number, lng: number }> = {
+    'rabat': { lat: 34.020882, lng: -6.841650 },
+    'casablanca': { lat: 33.5731, lng: -7.5898 },
+    'marrakech': { lat: 31.6295, lng: -7.9811 },
+    'tanger': { lat: 35.7595, lng: -5.8340 },
+    'agadir': { lat: 30.4278, lng: -9.5981 },
+  };
+
+  useEffect(() => {
+    if (sortBy === 'Distance' && !userLocation) {
+      if (searchCity.trim().toLowerCase() && cityCoordinates[searchCity.trim().toLowerCase()]) {
+         setUserLocation(cityCoordinates[searchCity.trim().toLowerCase()]);
+         return;
+      }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+          },
+          (error) => {
+            console.error("Error getting location: ", error);
+            addToast("Impossible d'obtenir position. Renseignez une ville valide dans la recherche.", "error");
+          }
+        );
+      } else {
+        addToast("La géolocalisation n'est pas supportée par votre navigateur", "error");
+      }
+    }
+  }, [sortBy, userLocation, addToast, searchCity]);
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Rayon de la terre en km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance en km
+  };
+
+  // Stub data for map locations
+  const initialJobLocations = [
+    { id: 1, title: 'Manager de Restaurant Expérimenté', position: { lat: 34.020882, lng: -6.841650 }, salary: '45k € - 60k €/an', category: 'Manager', company: 'Palace Hotel', location: 'Rabat, Agdal', type: 'CDI', contract: 'Temps plein' },
+    { id: 2, title: 'Chef de Cuisine', position: { lat: 34.018, lng: -6.835 }, salary: '35k € - 45k €/an', category: 'Cuisine', company: 'La Grande Bouffe', location: 'Rabat, Hassan', type: 'CDI', contract: 'Temps plein' },
+    { id: 3, title: 'Serveur en Restauration', position: { lat: 34.025, lng: -6.845 }, salary: 'SMIC + Pourboires', category: 'Service', company: 'Brasserie de la Gare', location: 'Rabat, Centre-ville', type: 'CDD', contract: 'Temps partiel' },
+    { id: 4, title: 'Assistant Manager', position: { lat: 34.010, lng: -6.850 }, salary: '30k € - 40k €/an', category: 'Manager', company: 'Palace Hotel', location: 'Rabat, Agdal', type: 'CDI', contract: 'Temps plein' },
+    { id: 5, title: 'Maître d\'Hôtel', position: { lat: 34.015, lng: -6.840 }, salary: '40k € - 50k €/an', category: 'Service', company: 'Le Petit Molière', location: 'Rabat, Ryad', type: 'CDI', contract: 'Temps plein' },
+    { id: 6, title: 'Cuisinier', position: { lat: 34.022, lng: -6.838 }, salary: '25k € - 30k €/an', category: 'Cuisine', company: 'Bistrot du Coin', location: 'Rabat, Ocean', type: 'CDD', contract: 'Temps plein' },
+  ];
+
+  const jobLocations = useMemo(() => {
+    let result = [...initialJobLocations];
+
+    if (selectedContracts.length > 0) {
+      result = result.filter(job => selectedContracts.includes(job.type));
+    }
+
+    if (sortBy === 'Distance' && userLocation) {
+      result.sort((a, b) => {
+        const distA = calculateDistance(userLocation.lat, userLocation.lng, a.position.lat, a.position.lng);
+        const distB = calculateDistance(userLocation.lat, userLocation.lng, b.position.lat, b.position.lng);
+        return distA - distB;
+      });
+    }
+    return result;
+  }, [sortBy, userLocation, selectedContracts]);
 
   const handleShare = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -63,6 +188,11 @@ export default function Jobs() {
               <input 
                 type="text" 
                 placeholder="Ville ou région" 
+                value={searchCity}
+                onChange={(e) => {
+                  setSearchCity(e.target.value);
+                  setUserLocation(null); // Reset location to trigger re-calculation
+                }}
                 className="w-full bg-transparent border-none focus:ring-0 text-dark-900 placeholder:text-dark-400 px-4 focus:outline-none"
               />
             </div>
@@ -111,7 +241,12 @@ export default function Jobs() {
               <div className="space-y-2">
                 {['CDI', 'CDD', 'Stage', 'Freelance', 'Saisonnier'].map(type => (
                   <label key={type} className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" />
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500"
+                      checked={selectedContracts.includes(type)}
+                      onChange={() => toggleFilter(setSelectedContracts, type)}
+                    />
                     <span className="text-dark-700 dark:text-dark-300 text-sm">{type}</span>
                   </label>
                 ))}
@@ -126,7 +261,12 @@ export default function Jobs() {
               <div className="space-y-2">
                 {['Débutant', '1 à 3 ans', '3 à 5 ans', '+5 ans'].map(exp => (
                   <label key={exp} className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" />
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" 
+                      checked={selectedExperiences.includes(exp)}
+                      onChange={() => toggleFilter(setSelectedExperiences, exp)}
+                    />
                     <span className="text-dark-700 dark:text-dark-300 text-sm">{exp}</span>
                   </label>
                 ))}
@@ -141,7 +281,12 @@ export default function Jobs() {
               <div className="space-y-2">
                 {['Moins de 5 000 DH', '5 000 - 8 000 DH', '8 000 - 12 000 DH', '12 000 - 20 000 DH', 'Plus de 20 000 DH'].map(range => (
                   <label key={range} className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" />
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" 
+                      checked={selectedSalaries.includes(range)}
+                      onChange={() => toggleFilter(setSelectedSalaries, range)}
+                    />
                     <span className="text-dark-700 dark:text-dark-300 text-sm">{range}</span>
                   </label>
                 ))}
@@ -153,7 +298,7 @@ export default function Jobs() {
         {/* Jobs List */}
         <div className="flex-1 w-full space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-            <span className="text-dark-600 dark:text-dark-400"><strong>482</strong> offres trouvées</span>
+            <span className="text-dark-600 dark:text-dark-400"><AnimatedCounter value={jobLocations.length} /> offres trouvées</span>
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex bg-white dark:bg-dark-800 rounded-md p-1 border border-dark-100 dark:border-dark-700">
                 <button
@@ -170,6 +315,13 @@ export default function Jobs() {
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`p-1.5 rounded transition-colors ${viewMode === 'map' ? 'bg-dark-50 dark:bg-dark-700 text-primary-500 shadow-sm' : 'text-dark-400 hover:text-dark-600 dark:hover:text-dark-300'}`}
+                  title="Vue carte"
+                >
+                  <MapIcon className="w-4 h-4" />
+                </button>
               </div>
               <button 
                 onClick={() => setIsAlertModalOpen(true)}
@@ -178,62 +330,102 @@ export default function Jobs() {
               >
                 <Bell className="w-4 h-4" /> Créer une alerte
               </button>
-              <select className="bg-transparent border-none text-dark-900 dark:text-white font-medium focus:ring-0 cursor-pointer">
-                <option>Les plus récentes</option>
-                <option>Pertinence</option>
-                <option>Salaire décroissant</option>
+              <select 
+                className="bg-transparent border-none text-dark-900 dark:text-white font-medium focus:ring-0 cursor-pointer"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="Les plus récentes">Les plus récentes</option>
+                <option value="Pertinence">Pertinence</option>
+                <option value="Salaire décroissant">Salaire décroissant</option>
+                <option value="Distance">Distance</option>
               </select>
             </div>
           </div>
 
-          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-4"}>
-            {[1, 2, 3, 4, 5, 6].map((i, index) => (
-              <div key={i} className={`flex flex-col gap-4 ${viewMode === 'grid' && index === 2 ? 'md:col-span-2' : ''}`}>
-                <div className={`bg-white dark:bg-dark-800 rounded-xl p-5 border-y border-r border-dark-100 dark:border-dark-700 border-l-4 border-l-primary-500 hover:border-y-primary-500 hover:border-r-primary-500 transition-colors flex ${viewMode === 'grid' ? 'flex-col gap-4 h-full' : 'flex-col md:flex-row gap-6'} shadow-sm hover:shadow-md`}>
-                  <div className="w-16 h-16 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-100 dark:border-dark-700 shrink-0" />
-                  <div className="flex-1 flex flex-col">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-2">
+          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4" : viewMode === 'map' ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : "space-y-4"}>
+            {viewMode === 'map' ? (
+              <>
+                <div className="overflow-y-auto space-y-4 pr-2 custom-scrollbar h-[600px] lg:h-[800px]">
+                  {jobLocations.map((job) => (
+                    <div 
+                      key={job.id} 
+                      onMouseEnter={() => setHoveredJobId(job.id)}
+                      onMouseLeave={() => setHoveredJobId(null)}
+                      onClick={() => setHoveredJobId(job.id)}
+                      className={`bg-white dark:bg-dark-800 rounded-xl p-5 border transition-colors shadow-sm cursor-pointer group ${hoveredJobId === job.id ? 'border-primary-500' : 'border-dark-100 dark:border-dark-700'}`}
+                    >
+                      <h3 className="text-lg font-bold text-dark-900 dark:text-white group-hover:text-primary-500 mb-1">{job.title}</h3>
+                      <p className="text-sm text-dark-600 dark:text-dark-400 mb-3">{job.company} • {job.location}</p>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                          <DollarSign className="w-4 h-4" />
+                          <span>{job.salary}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-dark-500 dark:text-dark-400">
+                          <Briefcase className="w-4 h-4" />
+                          <span>{job.type}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-dark-500 dark:text-dark-400">
+                          <Clock className="w-4 h-4" />
+                          <span>{job.contract}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-[600px] lg:h-[800px] sticky top-4">
+                  <JobsMap jobs={jobLocations} hoveredJobId={hoveredJobId} />
+                </div>
+              </>
+            ) : (
+              jobLocations.map((job, index) => (
+                <div key={job.id} className={`flex flex-col gap-4 ${viewMode === 'grid' && index === 2 ? 'md:col-span-2' : ''}`}>
+                  <div className={`bg-white dark:bg-dark-800 rounded-xl p-5 border-y border-r border-dark-100 dark:border-dark-700 border-l-4 border-l-primary-500 hover:border-y-primary-500 hover:border-r-primary-500 transition-colors flex ${viewMode === 'grid' ? 'flex-col gap-4 h-full' : 'flex-col md:flex-row gap-6'} shadow-sm hover:shadow-md`}>
+                    <div className="w-16 h-16 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-100 dark:border-dark-700 shrink-0" />
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-2">
                       <div>
                         <h3 className="text-xl font-bold text-dark-900 dark:text-white hover:text-primary-500 cursor-pointer mb-1">
-                          Manager de Restaurant Expérimenté
+                          {job.title}
                         </h3>
-                        <div className="text-primary-600 dark:text-primary-400 font-medium text-sm">Le Bistrot Parisien</div>
+                        <div className="text-primary-600 dark:text-primary-400 font-medium text-sm">{job.company || 'Le Bistrot Parisien'}</div>
                       </div>
                       <div className="hidden md:flex items-center gap-1 shrink-0">
                       <button 
-                        onClick={(e) => handleShare(e, i)}
+                        onClick={(e) => handleShare(e, job.id)}
                         title="Copier le lien"
                         className="p-2 text-dark-400 hover:text-primary-500 bg-dark-50 dark:bg-dark-900 rounded-full transition-colors shrink-0 flex items-center justify-center"
                       >
-                        {copiedId === i ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
+                        {copiedId === job.id ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
                       </button>
                       <button 
-                        onClick={(e) => handleSaveJob(e, i)}
+                        onClick={(e) => handleSaveJob(e, job.id)}
                         title="Sauvegarder" 
                         className={`p-2 rounded-full transition-colors shrink-0 flex items-center justify-center ${
-                          savedJobs.includes(i) ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'text-dark-400 hover:text-primary-500 bg-dark-50 dark:bg-dark-900'
+                          savedJobs.includes(job.id) ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'text-dark-400 hover:text-primary-500 bg-dark-50 dark:bg-dark-900'
                         }`}
                       >
-                        <svg className={`w-5 h-5 ${savedJobs.includes(i) ? 'fill-current' : 'fill-none'}`} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        <svg className={`w-5 h-5 ${savedJobs.includes(job.id) ? 'fill-current' : 'fill-none'}`} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                       </button>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-4 text-sm text-dark-500 dark:text-dark-400 mb-4">
-                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Rabat, Agdal</span>
-                    <span className="flex items-center gap-1.5"><Briefcase className="w-4 h-4" /> CDI</span>
-                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Temps plein</span>
-                    <span className="flex items-center gap-1.5"><DollarSign className="w-4 h-4" /> 8,000 - 12,000 DH</span>
+                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {job.location || 'Rabat, Agdal'}</span>
+                    <span className="flex items-center gap-1.5"><Briefcase className="w-4 h-4" /> {job.type || 'CDI'}</span>
+                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {job.contract || 'Temps plein'}</span>
+                    <span className="flex items-center gap-1.5"><DollarSign className="w-4 h-4" /> {job.salary || '8,000 - 12,000 DH'}</span>
                   </div>
 
                   <p className="text-dark-600 dark:text-dark-300 text-sm line-clamp-2 mb-4">
-                    Nous recherchons un Manager dynamique pour diriger notre équipe. Vous serez en charge de la gestion opérationnelle, du recrutement, de l'élaboration des plannings et de la satisfaction client au quotidien...
+                    Nous recherchons un collaborateur dynamique pour rejoindre notre équipe. Vous serez en charge des missions afférentes à ce poste et de la satisfaction client au quotidien...
                   </p>
 
                   <div className="flex flex-wrap gap-2 mt-auto pt-4">
-                    <span className="px-3 py-1 bg-dark-50 dark:bg-dark-900 text-dark-600 dark:text-dark-300 text-xs rounded-md">Management</span>
+                    <span className="px-3 py-1 bg-dark-50 dark:bg-dark-900 text-dark-600 dark:text-dark-300 text-xs rounded-md">{job.category || 'Management'}</span>
                     <span className="px-3 py-1 bg-dark-50 dark:bg-dark-900 text-dark-600 dark:text-dark-300 text-xs rounded-md">Service Client</span>
-                    <span className="px-3 py-1 bg-dark-50 dark:bg-dark-900 text-dark-600 dark:text-dark-300 text-xs rounded-md">Gestion des stocks</span>
                   </div>
                 </div>
                 <div className={`flex flex-col justify-end ${viewMode === 'grid' ? 'mt-4' : ''}`}>
@@ -244,8 +436,9 @@ export default function Jobs() {
               </div>
               {index === 2 && <AdBanner dataAdSlot="1234567890" />}
             </div>
-          ))}
-          </div>
+          ))
+        )}
+        </div>
 
           {/* Pagination */}
           <div className="flex justify-center gap-2 mt-8">

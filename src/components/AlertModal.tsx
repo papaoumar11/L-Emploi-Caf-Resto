@@ -6,19 +6,35 @@ import { useToast } from '../context/ToastContext';
 interface AlertModalProps {
   isOpen: boolean;
   onClose: () => void;
+  searchQuery?: string;
+  locationQuery?: string;
 }
 
-export default function AlertModal({ isOpen, onClose }: AlertModalProps) {
+export default function AlertModal({ isOpen, onClose, searchQuery = 'Tous les emplois', locationQuery = 'Toutes les villes' }: AlertModalProps) {
   const { addToast } = useToast();
   const [email, setEmail] = useState('');
-  const [frequency, setFrequency] = useState('daily');
+  const [frequency, setFrequency] = useState('Quotidienne');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Enregistrer l'alerte dans le localStorage
+    const newAlert = {
+      id: Date.now(),
+      keyword: searchQuery || 'Nouvelle Recherche',
+      location: locationQuery || 'Toutes les villes',
+      frequency,
+      email
+    };
+    
+    const existingAlerts = JSON.parse(localStorage.getItem('jobAlerts') || '[]');
+    localStorage.setItem('jobAlerts', JSON.stringify([...existingAlerts, newAlert]));
+
     setIsSubmitted(true);
     setTimeout(() => {
       setIsSubmitted(false);
+      setEmail('');
       onClose();
       addToast('Alerte créée avec succès !', 'success');
     }, 1500);
@@ -95,9 +111,9 @@ export default function AlertModal({ isOpen, onClose }: AlertModalProps) {
                     onChange={(e) => setFrequency(e.target.value)}
                     className="w-full px-3 py-2 bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 rounded-md text-sm focus:outline-none focus:border-primary-500 text-dark-900 dark:text-white cursor-pointer"
                   >
-                    <option value="daily">Quotidienne</option>
-                    <option value="weekly">Hebdomadaire</option>
-                    <option value="instant">Immédiate</option>
+                    <option value="Quotidienne">Quotidienne</option>
+                    <option value="Hebdomadaire">Hebdomadaire</option>
+                    <option value="Immédiate">Immédiate</option>
                   </select>
                 </div>
                 <div className="pt-4 flex justify-end gap-3">

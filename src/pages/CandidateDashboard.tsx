@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { User, FileText, Bookmark, Bell, Eye, Search, Briefcase, ChevronRight, Building, Star, Trash2, Mail, Loader2, Copy, Check, ChevronDown, ChevronUp, CheckCircle2, Circle, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, FileText, Bookmark, Bell, Eye, Search, Briefcase, ChevronRight, Building, Star, Trash2, Mail, Loader2, Copy, Check, ChevronDown, ChevronUp, CheckCircle2, Circle, XCircle, BarChart2 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
+import CompareJobsModal from '../components/CompareJobsModal';
 
 export default function CandidateDashboard() {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Lettre de motivation IA');
   const [jobDescription, setJobDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -12,6 +15,31 @@ export default function CandidateDashboard() {
   const [copiedLetter, setCopiedLetter] = useState(false);
   const [expandedAppId, setExpandedAppId] = useState<number | null>(null);
   const [alertToDelete, setAlertToDelete] = useState<number | null>(null);
+  const [jobToDelete, setJobToDelete] = useState<number | null>(null);
+
+  const [savedJobs, setSavedJobs] = useState([
+    { id: 1, title: 'Sous-Chef', company: 'Le Petit Nice', location: 'Marseille, France', salary: '2800€ - 3200€ brut/mois', type: 'CDI', contract: 'Temps plein' },
+    { id: 2, title: 'Chef de Partie', company: 'Brasserie Parisienne', location: 'Paris, France', salary: '2200€ - 2500€ brut/mois', type: 'CDD', contract: 'Temps plein' },
+    { id: 3, title: 'Manager Restaurant', company: 'La Belle Époque', location: 'Lyon, France', salary: '3000€ - 3500€ brut/mois', type: 'CDI', contract: 'Temps plein' },
+    { id: 4, title: 'Pâtissier', company: 'Pâtisserie Dupont', location: 'Bordeaux, France', salary: '2000€ - 2400€ brut/mois', type: 'CDI', contract: 'Temps partiel' },
+  ]);
+
+  const [selectedForCompare, setSelectedForCompare] = useState<number[]>([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+
+  const handleToggleCompare = (id: number) => {
+    if (selectedForCompare.includes(id)) {
+      setSelectedForCompare(selectedForCompare.filter(jobId => jobId !== id));
+    } else {
+      if (selectedForCompare.length >= 3) {
+        addToast('Vous pouvez comparer jusqu\'à 3 offres maximum.', 'info');
+        return;
+      }
+      setSelectedForCompare([...selectedForCompare, id]);
+    }
+  };
+
+  const selectedJobs = savedJobs.filter(job => selectedForCompare.includes(job.id));
 
   const handleGenerateLetter = () => {
     if (!jobDescription.trim()) return;
@@ -30,13 +58,21 @@ export default function CandidateDashboard() {
     setTimeout(() => setCopiedLetter(false), 2000);
   };
 
-  const [alerts, setAlerts] = useState([
-    { id: 1, keyword: 'Chef de Partie', location: 'Paris, France', frequency: 'Quotidienne' },
-    { id: 2, keyword: 'Manager Restaurant', location: 'Casablanca, Maroc', frequency: 'Hebdomadaire' }
-  ]);
+  const [alerts, setAlerts] = useState<any[]>(() => {
+    const saved = localStorage.getItem('jobAlerts');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [
+      { id: 1, keyword: 'Chef de Partie', location: 'Paris, France', frequency: 'Quotidienne' },
+      { id: 2, keyword: 'Manager Restaurant', location: 'Casablanca, Maroc', frequency: 'Hebdomadaire' }
+    ];
+  });
 
   const handleDeleteAlert = (id: number) => {
-    setAlerts(alerts.filter(a => a.id !== id));
+    const newAlerts = alerts.filter(a => a.id !== id);
+    setAlerts(newAlerts);
+    localStorage.setItem('jobAlerts', JSON.stringify(newAlerts));
     addToast('Alerte supprimée avec succès', 'success');
   };
 
@@ -61,6 +97,37 @@ export default function CandidateDashboard() {
              <button className="text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 px-3 py-1.5 rounded-md transition-colors whitespace-nowrap">
                Compléter
              </button>
+          </div>
+        </div>
+
+        {/* Statistiques de recherche */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-100 dark:border-dark-700 flex items-center gap-4 shadow-sm group hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setActiveTab('Mes Candidatures')}>
+            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-dark-500 dark:text-dark-400">Candidatures envoyées</p>
+              <h3 className="text-2xl font-bold text-dark-900 dark:text-white">3</h3>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-100 dark:border-dark-700 flex items-center gap-4 shadow-sm group hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setActiveTab('Offres Sauvegardées')}>
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Bookmark className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-dark-500 dark:text-dark-400">Offres sauvegardées</p>
+              <h3 className="text-2xl font-bold text-dark-900 dark:text-white">12</h3>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-100 dark:border-dark-700 flex items-center gap-4 shadow-sm group hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setActiveTab('Alertes Emploi')}>
+            <div className="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Bell className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-dark-500 dark:text-dark-400">Alertes actives</p>
+              <h3 className="text-2xl font-bold text-dark-900 dark:text-white">{alerts.length}</h3>
+            </div>
           </div>
         </div>
 
@@ -295,8 +362,63 @@ export default function CandidateDashboard() {
             )}
 
             {activeTab === 'Offres Sauvegardées' && (
-              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-100 dark:border-dark-700 p-6 text-center text-dark-500 dark:text-dark-400">
-                Vous n'avez pas encore d'offres sauvegardées.
+              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-100 dark:border-dark-700 overflow-hidden">
+                <div className="p-6 border-b border-dark-100 dark:border-dark-700 flex items-center justify-between">
+                  <div className="font-bold text-lg text-dark-900 dark:text-white mb-2">Offres sauvegardées</div>
+                  {selectedForCompare.length > 0 && (
+                     <button
+                        onClick={() => setIsCompareModalOpen(true)}
+                        className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm"
+                     >
+                        <BarChart2 className="w-4 h-4" /> Comparer ({selectedForCompare.length}/3)
+                     </button>
+                  )}
+                </div>
+                {savedJobs.length === 0 ? (
+                   <div className="p-6 text-center text-dark-500 dark:text-dark-400">
+                     Vous n'avez pas encore d'offres sauvegardées.
+                   </div>
+                ) : (
+                  <div className="divide-y divide-dark-100 dark:divide-dark-700">
+                     {savedJobs.map((job) => (
+                        <div key={job.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-dark-50 dark:hover:bg-dark-800/50 transition-colors">
+                           <div className="flex gap-4 items-center">
+                              <div className="w-12 h-12 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-100 dark:border-dark-700 flex items-center justify-center shrink-0 cursor-pointer">
+                                 <Building className="w-6 h-6 text-dark-400" />
+                              </div>
+                              <div>
+                                 <h4 className="font-bold text-dark-900 dark:text-white cursor-pointer hover:text-primary-500 transition-colors">{job.title}</h4>
+                                 <div className="text-sm text-dark-500 dark:text-dark-400">{job.company} • {job.location}</div>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-3">
+                              <label className="flex items-center gap-2 cursor-pointer group">
+                                 <input 
+                                    type="checkbox" 
+                                    className="w-4 h-4 text-primary-500 border-dark-300 rounded focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-800"
+                                    checked={selectedForCompare.includes(job.id)}
+                                    onChange={() => handleToggleCompare(job.id)}
+                                 />
+                                 <span className="text-sm font-medium text-dark-600 dark:text-dark-300 group-hover:text-dark-900 dark:group-hover:text-white transition-colors">Comparer</span>
+                              </label>
+                              <button 
+                                 onClick={() => setJobToDelete(job.id)}
+                                 className="p-2 text-dark-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors" 
+                                 title="Retirer des favoris"
+                              >
+                                 <Trash2 className="w-5 h-5" />
+                              </button>
+                              <button 
+                                 onClick={() => navigate('/jobs')}
+                                 className="px-4 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-500 hover:text-white rounded-md text-sm font-semibold transition-colors"
+                              >
+                                 Voir l'offre
+                              </button>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -389,6 +511,28 @@ export default function CandidateDashboard() {
         title="Supprimer l'alerte emploi"
         message="Êtes-vous sûr de vouloir supprimer cette alerte emploi ? Vous ne recevrez plus de notifications pour cette recherche."
         confirmText="Supprimer"
+      />
+
+      <ConfirmModal
+        isOpen={jobToDelete !== null}
+        onClose={() => setJobToDelete(null)}
+        onConfirm={() => {
+          if (jobToDelete !== null) {
+            setSavedJobs(savedJobs.filter(j => j.id !== jobToDelete));
+            setSelectedForCompare(selectedForCompare.filter(jobId => jobId !== jobToDelete));
+            addToast('Offre retirée des favoris', 'success');
+            setJobToDelete(null);
+          }
+        }}
+        title="Retirer des favoris"
+        message="Êtes-vous sûr de vouloir retirer cette offre de vos favoris ?"
+        confirmText="Retirer"
+      />
+
+      <CompareJobsModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        jobs={selectedJobs}
       />
     </div>
   );

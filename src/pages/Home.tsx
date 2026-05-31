@@ -98,17 +98,17 @@ export default function Home() {
       {/* Featured Categories */}
       <section className="py-20 bg-dark-50 dark:bg-dark-800">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <h2 className="text-3xl font-bold mb-3 text-dark-900 dark:text-white">Découvrez nos métiers</h2>
-              <p className="text-dark-600 dark:text-dark-300">Explorez les offres d'emploi par catégorie dans le secteur de la restauration.</p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl md:text-4xl font-extrabold mb-4 text-dark-900 dark:text-white tracking-tight">Découvrez nos métiers</h2>
+              <p className="text-lg text-dark-600 dark:text-dark-300">Explorez les offres d'emploi par catégorie dans le secteur de la restauration et de l'hôtellerie au Maroc.</p>
             </div>
-            <Link to="/categories" className="hidden sm:flex items-center gap-2 text-primary-500 font-medium hover:text-primary-600 transition-colors">
-              Toutes les catégories <ChevronRight className="w-4 h-4" />
+            <Link to="/categories" className="inline-flex items-center gap-2 text-primary-500 font-semibold hover:text-primary-600 transition-colors bg-primary-50 dark:bg-primary-900/20 px-5 py-2.5 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 w-fit">
+              Toutes les catégories <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
             {[
               { icon: ChefHat, name: 'Cuisine', count: '1,240' },
               { icon: Utensils, name: 'Salle', count: '2,890' },
@@ -123,13 +123,14 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white dark:bg-dark-900 p-6 rounded-2xl border border-dark-100 dark:border-dark-800 flex flex-col items-center justify-center text-center hover:border-primary-500 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group"
+                className="bg-white dark:bg-dark-900 p-6 sm:p-8 rounded-3xl border border-dark-100 dark:border-dark-800 flex flex-col items-center justify-center text-center hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-2 transition-all duration-300 cursor-pointer group relative overflow-hidden"
               >
-                <div className="w-14 h-14 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-500 mb-4 group-hover:scale-110 transition-transform">
-                  <cat.icon className="w-7 h-7" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 to-primary-500/0 group-hover:from-primary-500/5 group-hover:to-primary-500/0 transition-colors duration-300" />
+                <div className="w-16 h-16 rounded-2xl bg-dark-50 dark:bg-dark-900 border border-dark-100 dark:border-dark-800 group-hover:bg-primary-500 group-hover:border-primary-500 flex items-center justify-center text-dark-500 dark:text-dark-400 group-hover:text-white mb-5 transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:rotate-3">
+                  <cat.icon className="w-8 h-8" />
                 </div>
-                <h3 className="font-semibold text-dark-900 dark:text-white mb-1">{cat.name}</h3>
-                <span className="text-sm text-dark-500 dark:text-dark-400">{cat.count} offres</span>
+                <h3 className="font-bold text-dark-900 dark:text-white mb-3 group-hover:text-primary-500 transition-colors">{cat.name}</h3>
+                <span className="inline-block px-3 py-1 bg-dark-50 dark:bg-dark-800 text-dark-500 dark:text-dark-400 text-xs font-semibold rounded-full group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{cat.count} offres</span>
               </motion.div>
             ))}
           </div>
